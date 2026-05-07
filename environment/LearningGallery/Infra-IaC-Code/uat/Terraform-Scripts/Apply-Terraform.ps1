@@ -16,6 +16,9 @@ param (
     [string]$Path
 )
 
+# Tell PowerShell to stop immediately if it hits a fatal script error
+$ErrorActionPreference = "Stop"
+
 $PlanFile = "apply.tfplan.tmp"
 
 Write-Host "=====================================================================================" -ForegroundColor Cyan

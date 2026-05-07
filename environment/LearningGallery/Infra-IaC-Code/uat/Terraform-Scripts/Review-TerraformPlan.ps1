@@ -15,24 +15,41 @@ param (
     [string]$Path
 )
 
+# Tell PowerShell to stop immediately if it hits a fatal script error
+$ErrorActionPreference = "Stop"
+
+# Navigate to the correct directory based on the GitHub Matrix
 Set-Location -Path $Path
 
 $PlanFile = "review.tfplan.tmp"
 
 Write-Host "=====================================================================================" -ForegroundColor Cyan
-Write-Host "[*] Fetching Terraform Plan Review..." -ForegroundColor Cyan
+Write-Host "[*] Fetching Terraform Plan Review for Environment: $Environment" -ForegroundColor Cyan
 Write-Host "=====================================================================================`n" -ForegroundColor Cyan
 
-# 1. Run plan normally so you see the live status in the foreground
-terraform plan -var-file="$VarFile" -out="$PlanFile"
-
-# Safety check: If the plan failed (e.g., syntax error), stop the script
-if (-not (Test-Path $PlanFile)) {
-    Write-Host "`n[!] Terraform plan failed. Exiting." -ForegroundColor Red
+# 1. Pre-Flight Check: Verify the Variable File Exists
+if (-not (Test-Path $VarFile)) {
+    Write-Host "`n[!] FATAL ERROR: Cannot find the variable file '$VarFile'." -ForegroundColor Red
+    Write-Host "Current Directory: $(Get-Location)" -ForegroundColor Yellow
+    Write-Host "Did you remember to push terraform.auto.tfvars to GitHub?" -ForegroundColor Yellow
     exit 1
 }
 
-# 2. Silently read the generated plan file to build our custom table
+# 2. Run plan and capture ALL output (Standard & Error Streams)
+Write-Host "Executing: terraform plan -var-file=`"$VarFile`" -out=`"$PlanFile`"" -ForegroundColor DarkGray
+$rawOutput = terraform plan -var-file="$VarFile" -out="$PlanFile" 2>&1
+
+# 3. Safety check: Check Terraform's native exit code
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path $PlanFile)) {
+    Write-Host "`n[!] Terraform plan failed! Here is the raw error from Terraform:" -ForegroundColor Red
+    Write-Host "-------------------------------------------------------------------" -ForegroundColor Red
+    # Print the raw error stream so it shows up in the GitHub logs
+    $rawOutput | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
+    Write-Host "-------------------------------------------------------------------" -ForegroundColor Red
+    exit 1
+}
+
+# 4. Silently read the generated plan file to build our custom table
 $planOutput = terraform show -no-color $PlanFile
 
 $separator = "====================================================================================="
@@ -46,6 +63,10 @@ Write-Host $separator -ForegroundColor Cyan
 
 $logOutput = @()
 if ($LogFile) {
+    # Ensure Logs directory exists before trying to write to it
+    $logDir = Split-Path $LogFile
+    if ($logDir -and -not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out-Null }
+    
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logOutput += "Terraform Plan Review - $timestamp"
     $logOutput += $separator
@@ -55,7 +76,7 @@ if ($LogFile) {
 
 $changeCount = 0
 
-# 3. Build the table
+# 5. Build the table
 $planOutput | Select-String "# (.*?) (will be|must be) (created|destroyed|updated in-place|replaced)" | ForEach-Object {
     $changeCount++
     $resource = $_.Matches.Groups[1].Value

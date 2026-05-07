@@ -4,6 +4,9 @@ param (
     [string]$LogFile = "./Logs/tf-destroy-summary.log"
 )
 
+# Tell PowerShell to stop immediately if it hits a fatal script error
+$ErrorActionPreference = "Stop"
+
 $PlanFile = "destroy.tfplan.tmp"
 
 Write-Host "=====================================================================================" -ForegroundColor DarkRed
