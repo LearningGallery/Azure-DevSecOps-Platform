@@ -21,6 +21,9 @@ $ErrorActionPreference = "Stop"
 # Navigate to the correct directory based on the GitHub Matrix
 Set-Location -Path $Path
 
+Write-Host "[*] Initializing Terraform Backend..." -ForegroundColor DarkGray
+terraform init -no-color
+
 $PlanFile = "review.tfplan.tmp"
 
 Write-Host "=====================================================================================" -ForegroundColor Cyan
