@@ -45,13 +45,14 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-
-      - name: Debug Output Runner Directory
-        shell: pwsh
-        run: |
-            Write-Output "Current Directory: $PWD"
-            Write-Output "Folder Contents:"
-            Get-ChildItem -Recurse -Depth 2   
+      
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        working-directory: ${{ matrix.path }}
+      
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ${{ matrix.path }} 
 
       - name: Run Plan Script
         shell: pwsh
