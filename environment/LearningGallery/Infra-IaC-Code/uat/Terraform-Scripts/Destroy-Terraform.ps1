@@ -16,7 +16,7 @@ terraform plan -destroy -var-file="$VarFile" -out="$PlanFile"
 # Safety check
 if (-not (Test-Path $PlanFile)) {
     Write-Host "`n[!] Terraform plan failed. Exiting." -ForegroundColor Red
-    exit
+    exit 1
 }
 
 # 2. Silently read the generated plan file to build our custom table

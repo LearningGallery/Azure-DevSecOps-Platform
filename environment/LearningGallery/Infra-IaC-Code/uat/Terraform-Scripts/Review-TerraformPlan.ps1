@@ -29,7 +29,7 @@ terraform plan -var-file="$VarFile" -out="$PlanFile"
 # Safety check: If the plan failed (e.g., syntax error), stop the script
 if (-not (Test-Path $PlanFile)) {
     Write-Host "`n[!] Terraform plan failed. Exiting." -ForegroundColor Red
-    exit
+    exit 1
 }
 
 # 2. Silently read the generated plan file to build our custom table
