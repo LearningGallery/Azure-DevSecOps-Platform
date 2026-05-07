@@ -3,7 +3,7 @@ name: 'Terraform Apply InfraCode [UAT]'
 on:
   # 1. Listen SPECIFICALLY for the UAT Plan workflow to finish
   workflow_run:
-    workflows: ["TTerraform Plan InfraCode [UAT]"]
+    workflows: ["Terraform Plan InfraCode [UAT]"]
     types:
       - completed
     branches:
