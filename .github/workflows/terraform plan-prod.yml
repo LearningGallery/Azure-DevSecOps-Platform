@@ -3,6 +3,11 @@ name: 'Terraform Plan InfraCode PROD'
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'environment/LearningGallery/Infra-IaC-Code/prod/**'
+      - '.github/workflows/terraform-plan-prod.yml'
+      
+  # Manual trigger no longer needs inputs since this file is exclusively PROD
   workflow_dispatch: 
 
 permissions:

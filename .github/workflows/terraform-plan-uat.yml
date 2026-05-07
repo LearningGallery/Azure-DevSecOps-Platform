@@ -3,6 +3,10 @@ name: 'Terraform Plan InfraCode UAT'
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'environment/LearningGallery/Infra-IaC-Code/uat/**'
+      - '.github/workflows/terraform-plan-uat.yml'
+      
   # Manual trigger no longer needs inputs since this file is exclusively UAT
   workflow_dispatch: 
 
