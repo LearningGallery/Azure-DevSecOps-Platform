@@ -4,6 +4,18 @@ param (
     [string]$LogFile = "Logs/tf-plan-summary.log"
 )
 
+param (
+    [Parameter(Mandatory=$true)]
+    [ValidateSet("plan", "apply", "destroy")]
+    [string]$Action,
+
+    [Parameter(Mandatory=$true)]
+    [string]$Environment,
+
+    [Parameter(Mandatory=$true)]
+    [string]$Path
+)
+
 $PlanFile = "review.tfplan.tmp"
 
 Write-Host "=====================================================================================" -ForegroundColor Cyan
