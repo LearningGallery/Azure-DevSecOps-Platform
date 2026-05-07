@@ -80,12 +80,15 @@ if ($LogFile) {
 $changeCount = 0
 
 # 5. Build the table
+# 5. Build the table
 $planOutput | Select-String "# (.*?) (will be|must be) (created|destroyed|updated in-place|replaced)" | ForEach-Object {
     $changeCount++
-    $resource = $_.Matches.Groups[1].Value
-    $action   = $_.Matches.Groups[3].Value
+    $resource   = $_.Matches.Groups[1].Value
+    
+    # [FIX] Changed $action to $changeType to prevent collision with the global $Action parameter
+    $changeType = $_.Matches.Groups[3].Value 
 
-    switch ($action) {
+    switch ($changeType) {
         "created"          { $color = "Green";  $displayAction = "+ Create" }
         "destroyed"        { $color = "Red";    $displayAction = "- Delete" }
         "updated in-place" { $color = "Yellow"; $displayAction = "~ Modify" }
