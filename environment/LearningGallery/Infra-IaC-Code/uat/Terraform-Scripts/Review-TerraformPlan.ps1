@@ -1,10 +1,9 @@
 [CmdletBinding()]
 param (
+    # --- Local Default Parameters ---
     [string]$VarFile = "terraform.auto.tfvars",
-    [string]$LogFile = "Logs/tf-plan-summary.log"
-)
+    [string]$LogFile = "Logs/tf-plan-summary.log",
 
-param (
     [Parameter(Mandatory=$true)]
     [ValidateSet("plan", "apply", "destroy")]
     [string]$Action,
@@ -15,6 +14,8 @@ param (
     [Parameter(Mandatory=$true)]
     [string]$Path
 )
+
+Set-Location -Path $Path
 
 $PlanFile = "review.tfplan.tmp"
 
