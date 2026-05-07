@@ -46,7 +46,7 @@ module "network" {
   tags                 = local.common_tags
   enable_bastion       = var.enable_bastion
   bastion_name         = "bas${local.env}${local.zone}mgmnet01"
-  depends_on = [module.foundation]
+  depends_on           = [module.foundation]
 }
 
 # Module: Security
