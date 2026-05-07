@@ -1,0 +1,10 @@
+﻿tenant_id              = "00000000-0000-0000-0000-000000000000"
+windows_admin_password = "YourComplexPassword123!"
+ssh_public_key_path    = "C:\\Users\\YourUsername\\.ssh\\id_rsa.pub"
+
+tags = {
+  Owner       = "DevOps Team"
+  CostCenter  = "IT-Infrastructure"
+  Project     = "DevSecOps Platform"
+  Compliance  = "ISO27001"
+}

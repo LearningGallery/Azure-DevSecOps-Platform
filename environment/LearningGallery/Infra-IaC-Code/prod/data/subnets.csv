@@ -1,0 +1,5 @@
+﻿name,address_prefix,service_endpoints,delegation
+snet-monitor,10.20.1.0/24,"Microsoft.Storage,Microsoft.KeyVault",
+snet-aks,10.20.64.0/18,"Microsoft.Storage,Microsoft.ContainerRegistry",
+snet-vms,10.20.2.0/24,,
+snet-containers,10.20.3.0/24,,Microsoft.App/environments

@@ -1,0 +1,17 @@
+﻿*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform/
+.terraform.lock.hcl
+terraform.tfplan
+tfplan
+.vscode/
+.idea/
+*.log
+*.pem
+*.key
+id_rsa*
+!*.pub
+secrets/
+*.secret

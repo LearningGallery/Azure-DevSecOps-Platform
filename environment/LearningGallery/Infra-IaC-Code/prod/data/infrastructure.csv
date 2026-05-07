@@ -1,0 +1,5 @@
+﻿name,os_type,vm_size,data_disk_size_gb
+vmspiamgmjmp01,Linux,Standard_D4s_v3,512
+vmspiamgmjen01,Linux,Standard_D8s_v3,1024
+vmspiamgmson01,Linux,Standard_D8s_v3,512
+vmspiamgmwin01,Windows,Standard_D4s_v3,512

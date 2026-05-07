@@ -1,0 +1,3 @@
+storage_account,container_name,access_type
+stguiamgmlog01,logs,private
+stguiamgmlog01,backups,private

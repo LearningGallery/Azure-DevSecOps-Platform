@@ -1,0 +1,12 @@
+nsg_name,rule_name,priority,direction,access,protocol,source_port_range,destination_port_range,source_address_prefix,destination_address_prefix
+snet-monitor,AllowVnetInBound,100,Inbound,Allow,*,*,*,VirtualNetwork,VirtualNetwork
+snet-monitor,DenyAllInBound,4096,Inbound,Deny,*,*,*,*,*
+snet-vms,AllowBastionSSH,100,Inbound,Allow,Tcp,*,22,168.63.129.16,VirtualNetwork
+snet-vms,AllowBastionRDP,105,Inbound,Allow,Tcp,*,3389,168.63.129.16,VirtualNetwork
+snet-vms,AllowSSH,110,Inbound,Allow,Tcp,*,22,10.10.0.0/16,*
+snet-vms,AllowRDP,120,Inbound,Allow,Tcp,*,3389,10.10.0.0/16,*
+snet-vms,DenyAllInBound,4096,Inbound,Deny,*,*,*,*,*
+snet-aks,AllowVnetInBound,100,Inbound,Allow,*,*,*,VirtualNetwork,VirtualNetwork
+snet-aks,DenyAllInBound,4096,Inbound,Deny,*,*,*,*,*
+snet-containers,AllowVnetInBound,100,Inbound,Allow,*,*,*,VirtualNetwork,VirtualNetwork
+snet-containers,DenyAllInBound,4096,Inbound,Deny,*,*,*,*,*
