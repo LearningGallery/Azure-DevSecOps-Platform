@@ -28,9 +28,9 @@ jobs:
         environment: ${{ github.event.inputs.environment && fromJSON(format('["{0}"]', github.event.inputs.environment)) || fromJSON('["uat", "prod"]') }}
         include:
           - environment: uat
-            path: ./environment/LearningGallery/Infra-IaC-Code/uat
+            path: .\environment\LearningGallery\Infra-IaC-Code\uat
           - environment: prod
-            path: ./environment/LearningGallery/Infra-IaC-Code/prod
+            path: .\environment\LearningGallery\Infra-IaC-Code\prod
 
     steps:
       - name: Checkout Code
@@ -57,7 +57,7 @@ jobs:
       - name: Run Plan Script
         shell: pwsh
         run: |
-          .\environment\LearningGallery\Infra-IaC-Code\${{ matrix.environment }}\Terraform-Scripts\Review-TerraformPlan.ps1 -Action "plan" -Environment ${{ matrix.environment }} -Path ${{ matrix.path }}
+          ${{ matrix.path }}\Terraform-Scripts\Review-TerraformPlan.ps1 -Action "plan" -Environment ${{ matrix.environment }} -Path ${{ matrix.path }}
         env:
           TF_VAR_azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           TF_VAR_windows_admin_password: ${{ secrets.WINDOWS_ADMIN_PASSWORD }}
