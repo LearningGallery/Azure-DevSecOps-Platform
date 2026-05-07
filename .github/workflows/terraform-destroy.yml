@@ -1,0 +1,47 @@
+name: 'Terraform Destroy InfraCode'
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  destroy:
+    name: 'Destroy [${{ matrix.environment }}]'
+    runs-on: windows-latest
+    environment: ${{ matrix.environment }} # Still requires Email Approval
+    strategy:
+      matrix:
+        environment: [uat, prod]
+        include:
+          - environment: uat
+            path: ./environment/LearningGallery/Infra-IaC-Code/uat
+          - environment: prod
+            path: ./environment/LearningGallery/Infra-IaC-Code/prod
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Run Destroy Script
+        shell: pwsh
+        run: |
+          .\Terraform-Scripts\Apply-Terraform.ps1 `
+            -Action "destroy" `
+            -Environment ${{ matrix.environment }} `
+            -Path ${{ matrix.path }}
+        env:
+          TF_VAR_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          TF_VAR_windows_admin_password: ${{ secrets.WINDOWS_ADMIN_PASSWORD }}
