@@ -54,7 +54,7 @@ jobs:
       - name: Run Apply Script
         shell: pwsh
         run: |
-          .\Terraform-Scripts\Apply-Terraform.ps1 `
+          .\environment\LearningGallery\Infra-IaC-Code\${{ matrix.environment }}\Terraform-Scripts\Apply-Terraform.ps1 `
             -Action "apply" `
             -Environment ${{ matrix.environment }} `
             -Path ${{ matrix.path }}
