@@ -1,8 +1,14 @@
-name: 'Terraform Plan InfraCode'
+name: 'Terraform Apply InfraCode'
 
 on:
-  push:
-    branches: [ "main" ]
+  # 1. Listen for the Plan workflow to finish
+  workflow_run:
+    workflows: ["Terraform Plan InfraCode"]
+    types:
+      - completed
+    branches:
+      - main
+  # 2. Allow manual triggers for emergencies
   workflow_dispatch:
     inputs:
       environment:
@@ -11,20 +17,25 @@ on:
         default: 'uat'
         type: choice
         options: [uat, prod]
-  
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  plan:
-    name: 'Plan [${{ matrix.environment }}]'
+  apply:
+    name: 'Apply [${{ matrix.environment }}]'
+    # 3. CRITICAL: Only run if the Plan succeeded, OR if triggered manually
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     runs-on: windows-latest
+    
+    # 4. This line triggers the Email Approval Gate via GitHub Environments
     environment: ${{ matrix.environment }} 
+    
     strategy:
       fail-fast: false
       matrix:
+        # Dynamic matrix matches your Plan file
         environment: ${{ github.event.inputs.environment && fromJSON(format('["{0}"]', github.event.inputs.environment)) || fromJSON('["uat", "prod"]') }}
         include:
           - environment: uat
@@ -46,20 +57,16 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_wrapper: false
+          terraform_wrapper: false # Keeps PowerShell output clean
           
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
-        working-directory: ${{ matrix.path }}
-      
       - name: Terraform Init
         run: terraform init
         working-directory: ${{ matrix.path }} 
 
-      - name: Run Plan Script
+      - name: Run Apply Script
         shell: pwsh
-        run: |
-          ${{ matrix.path }}\Terraform-Scripts\Review-TerraformPlan.ps1 -Action "plan" -Environment ${{ matrix.environment }} -Path ${{ matrix.path }}
+        # Flattened command with no backticks to prevent YAML parsing errors
+        run: ${{ matrix.path }}\Terraform-Scripts\Apply-Terraform.ps1 -Action "apply" -Environment ${{ matrix.environment }} -Path ${{ matrix.path }}
         env:
           TF_VAR_azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           TF_VAR_windows_admin_password: ${{ secrets.WINDOWS_ADMIN_PASSWORD }}

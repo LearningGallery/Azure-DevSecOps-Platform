@@ -1,10 +1,10 @@
 [CmdletBinding()]
 param (
+    # --- Local Default Parameters ---
     [string]$VarFile = "terraform.auto.tfvars",
-    [string]$LogFile = "./Logs/tf-apply-summary.log"
-)
+    [string]$LogFile = "Logs/tf-apply-summary.log",
 
-param (
+    # --- CI/CD Matrix Parameters ---
     [Parameter(Mandatory=$true)]
     [ValidateSet("plan", "apply", "destroy")]
     [string]$Action,
@@ -19,22 +19,36 @@ param (
 # Tell PowerShell to stop immediately if it hits a fatal script error
 $ErrorActionPreference = "Stop"
 
+# Navigate to the correct directory based on the GitHub Matrix
+Set-Location -Path $Path
+
+# Initialize Terraform natively inside the target directory
+Write-Host "[*] Initializing Terraform Backend..." -ForegroundColor DarkGray
+terraform init -no-color
+
 $PlanFile = "apply.tfplan.tmp"
 
 Write-Host "=====================================================================================" -ForegroundColor Cyan
-Write-Host "[*] Fetching Terraform Apply Plan..." -ForegroundColor Cyan
+Write-Host "[*] Fetching Apply Plan for Environment: $Environment" -ForegroundColor Cyan
 Write-Host "=====================================================================================`n" -ForegroundColor Cyan
 
-# 1. Run plan normally so you see the live status in the foreground
-terraform plan -var-file="$VarFile" -out="$PlanFile"
-
-# Safety check: If the plan failed (e.g., syntax error), stop the script
-if (-not (Test-Path $PlanFile)) {
-    Write-Host "`n[!] Terraform plan failed. Exiting." -ForegroundColor Red
+# 1. Pre-Flight Check
+if (-not (Test-Path $VarFile)) {
+    Write-Host "`n[!] FATAL ERROR: Cannot find the variable file '$VarFile'." -ForegroundColor Red
     exit 1
 }
 
-# 2. Silently read the generated plan file to build our custom table
+# 2. Run plan to generate the execution file and capture output
+Write-Host "Executing: terraform plan -var-file=`"$VarFile`" -out=`"$PlanFile`"" -ForegroundColor DarkGray
+$rawOutput = terraform plan -var-file="$VarFile" -out="$PlanFile" 2>&1
+
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path $PlanFile)) {
+    Write-Host "`n[!] Terraform plan failed! Raw error:" -ForegroundColor Red
+    $rawOutput | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
+    exit 1
+}
+
+# 3. Build the Summary Table
 $planOutput = terraform show -no-color $PlanFile
 
 $separator = "====================================================================================="
@@ -48,22 +62,20 @@ Write-Host $separator -ForegroundColor Cyan
 
 $logOutput = @()
 if ($LogFile) {
+    $logDir = Split-Path $LogFile
+    if ($logDir -and -not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out-Null }
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logOutput += "Terraform Apply Review - $timestamp"
-    $logOutput += $separator
-    $logOutput += $header
-    $logOutput += $separator
+    $logOutput += "Terraform Apply Review - $timestamp`n$separator`n$header`n$separator"
 }
 
 $changeCount = 0
 
-# 3. Build the table
 $planOutput | Select-String "# (.*?) (will be|must be) (created|destroyed|updated in-place|replaced)" | ForEach-Object {
     $changeCount++
-    $resource = $_.Matches.Groups[1].Value
-    $action   = $_.Matches.Groups[3].Value
+    $resource   = $_.Matches.Groups[1].Value
+    $changeType = $_.Matches.Groups[3].Value # Renamed to avoid collision with $Action
 
-    switch ($action) {
+    switch ($changeType) {
         "created"          { $color = "Green";  $displayAction = "+ Create" }
         "destroyed"        { $color = "Red";    $displayAction = "- Delete" }
         "updated in-place" { $color = "Yellow"; $displayAction = "~ Modify" }
@@ -80,31 +92,29 @@ $planOutput | Select-String "# (.*?) (will be|must be) (created|destroyed|update
 Write-Host "$separator`n" -ForegroundColor Cyan
 
 if ($LogFile) {
-    $logOutput += $separator
-    $logOutput += "" 
+    $logOutput += "$separator`n" 
     $logOutput | Out-File -FilePath $LogFile -Encoding UTF8 -Append
 }
 
+# 4. Pipeline Execution Gate
 if ($changeCount -eq 0) {
     Write-Host "[OK] No changes required. Infrastructure matches the configuration.`n" -ForegroundColor Green
     Remove-Item $PlanFile -ErrorAction SilentlyContinue
-    exit
+    exit 0
 }
 
-# 4. Prompt for execution
-$title = "Confirm Apply"
-$message = "Do you want to apply these $changeCount changes?"
-$yes = New-Object System.Management.Automation.Host.ChoiceDescription '&Yes', 'Apply the changes.'
-$no = New-Object System.Management.Automation.Host.ChoiceDescription '&No', 'Cancel the apply.'
-$options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
+# In CI/CD, getting to this point means the human already approved via the GitHub UI.
+# We execute automatically.
+Write-Host "`n[*] GitHub Environment Approval Confirmed. Executing Terraform Apply...`n" -ForegroundColor Green
 
-$result = $host.ui.PromptForChoice($title, $message, $options, 1) # 1 is default No
+# 5. Apply the changes
+terraform apply -no-color "$PlanFile"
 
-if ($result -eq 0) {
-    Write-Host "`n[*] Executing Terraform Apply...`n" -ForegroundColor Green
-    terraform apply "$PlanFile"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "`n[!] Terraform Apply Failed during execution." -ForegroundColor Red
+    exit 1
 } else {
-    Write-Host "`n[!] Apply cancelled by user." -ForegroundColor Yellow
+    Write-Host "`n[+] Infrastructure Successfully Applied!" -ForegroundColor Green
 }
 
 # Cleanup
