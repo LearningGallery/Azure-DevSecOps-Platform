@@ -10,7 +10,7 @@ on:
         required: true
         default: 'uat'
         type: choice
-        options: [sit, uat, prod]
+        options: [uat, prod]
   
 
 permissions:
@@ -39,7 +39,7 @@ jobs:
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.TENANT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Setup Terraform
@@ -53,5 +53,5 @@ jobs:
             -Environment ${{ matrix.environment }} `
             -Path ${{ matrix.path }}
         env:
-          TF_VAR_tenant_id: ${{ secrets.TENANT_ID }}
+          TF_VAR_azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           TF_VAR_windows_admin_password: ${{ secrets.WINDOWS_ADMIN_PASSWORD }}
