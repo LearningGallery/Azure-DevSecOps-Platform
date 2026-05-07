@@ -56,10 +56,7 @@ jobs:
       - name: Run Plan Script
         shell: pwsh
         run: |
-          .\environment\LearningGallery\Infra-IaC-Code\${{ matrix.environment }}\Terraform-Scripts\Apply-Terraform.ps1 `
-            -Action "plan" `
-            -Environment ${{ matrix.environment }} `
-            -Path ${{ matrix.path }}
+          .\environment\LearningGallery\Infra-IaC-Code\${{ matrix.environment }}\Terraform-Scripts\Review-TerraformPlan.ps1 -Action "plan" -Environment ${{ matrix.environment }} -Path ${{ matrix.path }}
         env:
           TF_VAR_azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           TF_VAR_windows_admin_password: ${{ secrets.WINDOWS_ADMIN_PASSWORD }}
