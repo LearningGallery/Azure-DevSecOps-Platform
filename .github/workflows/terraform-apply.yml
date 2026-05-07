@@ -1,8 +1,14 @@
 name: 'Terraform Apply InfraCode'
 
 on:
-  push:
-    # branches: [ "main" ]
+  # 1. Listen for the Plan workflow to finish
+  workflow_run:
+    workflows: ["Terraform Plan InfraCode"]
+    types:
+      - completed
+    branches:
+      - main
+  # 2. Allow manual triggers for emergencies
   workflow_dispatch:
     inputs:
       environment:
@@ -19,16 +25,23 @@ permissions:
 jobs:
   apply:
     name: 'Apply [${{ matrix.environment }}]'
+    # 3. CRITICAL: Only run if the Plan succeeded, OR if triggered manually
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     runs-on: windows-latest
-    environment: ${{ matrix.environment }} # Triggers Email Approval Gate
+    
+    # 4. This line triggers the Email Approval Gate via GitHub Environments
+    environment: ${{ matrix.environment }} 
+    
     strategy:
+      fail-fast: false
       matrix:
-        environment: [uat, prod]
+        # Dynamic matrix matches your Plan file
+        environment: ${{ github.event.inputs.environment && fromJSON(format('["{0}"]', github.event.inputs.environment)) || fromJSON('["uat", "prod"]') }}
         include:
           - environment: uat
-            path: ./environment/LearningGallery/Infra-IaC-Code/uat
+            path: .\environment\LearningGallery\Infra-IaC-Code\uat
           - environment: prod
-            path: ./environment/LearningGallery/Infra-IaC-Code/prod
+            path: .\environment\LearningGallery\Infra-IaC-Code\prod
 
     steps:
       - name: Checkout Code
@@ -43,23 +56,17 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-
-      - name: Debug Output Runner Directory
-        shell: pwsh
-        run: |
-            Write-Output "Current Directory: $PWD"
-            Write-Output "Folder Contents:"
-            Get-ChildItem -Recurse -Depth 2   
+        with:
+          terraform_wrapper: false # Keeps PowerShell output clean
+          
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ${{ matrix.path }} 
 
       - name: Run Apply Script
         shell: pwsh
-        run: |
-          .\environment\LearningGallery\Infra-IaC-Code\${{ matrix.environment }}\Terraform-Scripts\Apply-Terraform.ps1 `
-            -Action "apply" `
-            -Environment ${{ matrix.environment }} `
-            -Path ${{ matrix.path }}
+        # Flattened command with no backticks to prevent YAML parsing errors
+        run: ${{ matrix.path }}\Terraform-Scripts\Apply-Terraform.ps1 -Action "apply" -Environment ${{ matrix.environment }} -Path ${{ matrix.path }}
         env:
           TF_VAR_azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           TF_VAR_windows_admin_password: ${{ secrets.WINDOWS_ADMIN_PASSWORD }}
-
-    
