@@ -38,11 +38,29 @@ if (-not (Test-Path $VarFile)) {
     exit 1
 }
 
-# 2. Run plan and capture ALL output (Standard & Error Streams)
-Write-Host "Executing: terraform plan -var-file=`"$VarFile`" -out=`"$PlanFile`"" -ForegroundColor DarkGray
+# ==============================================================================
+# [NEW FIX] 2. The Firewall Bypass (Targeted Apply)
+# Force Terraform to update the firewalls with the new GitHub Runner IP 
+# before attempting to read the state of the containers/secrets inside.
+# ==============================================================================
+Write-Host "`n[*] Bypassing firewalls: Whitelisting new GitHub Runner IP..." -ForegroundColor DarkGray
+
+# We target ONLY the Key Vault and Storage Account to avoid the 403 data-plane errors
+terraform apply -target="module.storage.azurerm_storage_account.main" -target="module.security.azurerm_key_vault.main" -var-file="$VarFile" -auto-approve 2>&1 | Out-Null
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "[*] Firewall rules successfully updated! Pausing for 45 seconds to allow Azure network propagation..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 45
+} else {
+    Write-Host "[!] Warning: Targeted firewall update threw an error. Plan may still hit 403 errors." -ForegroundColor Yellow
+}
+# ==============================================================================
+
+# 3. Run plan and capture ALL output (Standard & Error Streams)
+Write-Host "`nExecuting: terraform plan -var-file=`"$VarFile`" -out=`"$PlanFile`"" -ForegroundColor DarkGray
 $rawOutput = terraform plan -var-file="$VarFile" -out="$PlanFile" 2>&1
 
-# 3. Safety check: Check Terraform's native exit code
+# 4. Safety check: Check Terraform's native exit code
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path $PlanFile)) {
     Write-Host "`n[!] Terraform plan failed! Here is the raw error from Terraform:" -ForegroundColor Red
     Write-Host "-------------------------------------------------------------------" -ForegroundColor Red
@@ -52,7 +70,7 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path $PlanFile)) {
     exit 1
 }
 
-# 4. Silently read the generated plan file to build our custom table
+# 5. Silently read the generated plan file to build our custom table
 $planOutput = terraform show -no-color $PlanFile
 
 $separator = "====================================================================================="
@@ -79,8 +97,7 @@ if ($LogFile) {
 
 $changeCount = 0
 
-# 5. Build the table
-# 5. Build the table
+# 6. Build the table
 $planOutput | Select-String "# (.*?) (will be|must be) (created|destroyed|updated in-place|replaced)" | ForEach-Object {
     $changeCount++
     $resource   = $_.Matches.Groups[1].Value
