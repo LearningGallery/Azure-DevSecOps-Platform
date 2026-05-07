@@ -1,9 +1,9 @@
-name: 'Terraform Apply InfraCode [PROD]'
+name: 'Terraform Apply InfraCode PROD'
 
 on:
   # 1. Listen SPECIFICALLY for the PROD Plan workflow to finish
   workflow_run:
-    workflows: ["Terraform Plan InfraCode [PROD]"]
+    workflows: ["Terraform Plan InfraCode PROD"]
     types:
       - completed
     branches:

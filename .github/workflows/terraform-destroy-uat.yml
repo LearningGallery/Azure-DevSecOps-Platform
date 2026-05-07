@@ -1,4 +1,4 @@
-name: 'Terraform Destroy InfraCode [UAT]'
+name: 'Terraform Destroy InfraCode UAT'
 
 # 1. NO automated triggers. This can only be run manually.
 on:

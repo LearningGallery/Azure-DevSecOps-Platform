@@ -1,4 +1,4 @@
-name: 'Terraform Plan InfraCode [UAT]'
+name: 'Terraform Plan InfraCode UAT'
 
 on:
   push:
