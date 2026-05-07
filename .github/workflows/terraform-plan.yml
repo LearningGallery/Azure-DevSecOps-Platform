@@ -3,7 +3,7 @@ name: 'Terraform Plan InfraCode'
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch: # Allows manual run
+  workflow_dispatch:
     inputs:
       environment:
         description: 'Environment to Apply'
@@ -21,10 +21,11 @@ jobs:
   plan:
     name: 'Plan [${{ matrix.environment }}]'
     runs-on: windows-latest
+    environment: ${{ matrix.environment }} 
     strategy:
       fail-fast: false
       matrix:
-        environment: [uat, prod]
+        environment: ${{ github.event.inputs.environment && fromJSON(format('["{0}"]', github.event.inputs.environment)) || fromJSON('["uat", "prod"]') }}
         include:
           - environment: uat
             path: ./environment/LearningGallery/Infra-IaC-Code/uat

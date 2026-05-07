@@ -2,8 +2,8 @@ name: 'Terraform Apply InfraCode'
 
 on:
   push:
-    branches: [ "main" ]
-  workflow_dispatch: # Allows manual run
+    # branches: [ "main" ]
+  workflow_dispatch:
     inputs:
       environment:
         description: 'Environment to Apply'
