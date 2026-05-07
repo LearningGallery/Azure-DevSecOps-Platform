@@ -59,7 +59,7 @@ module "security" {
   index                      = "01"
   private_endpoint_subnet_id = module.network.subnet_ids["snet-monitor"]
   key_vault_dns_zone_id      = module.network.private_dns_zone_ids["privatelink.vaultcore.azure.net"]
-  tenant_id                  = var.tenant_id
+  tenant_id                  = var.azure_tenant_id
   current_user_object_id     = data.azurerm_client_config.current.object_id
   resource_group_name        = module.foundation.resource_group_name
   location                   = var.location

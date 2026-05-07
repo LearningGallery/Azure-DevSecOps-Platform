@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param (
-    [string]$VarFile = "terraform.tfvars",
+    [string]$VarFile = "terraform.auto.tfvars",
     [string]$LogFile = "./Logs/tf-apply-summary.log"
 )
 

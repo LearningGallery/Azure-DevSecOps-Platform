@@ -38,7 +38,7 @@ variable "ssh_public_key_path" {
   default     = "~/.ssh/id_rsa.pub"
 }
 
-variable "tenant_id" {
+variable "azure_tenant_id" {
   description = "Azure AD Tenant ID"
   type        = string
 }
