@@ -54,3 +54,11 @@ jobs:
         env:
           TF_VAR_azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           TF_VAR_windows_admin_password: ${{ secrets.WINDOWS_ADMIN_PASSWORD }}
+
+      - name: Debug Output Runner Directory
+        shell: pwsh
+        run: |
+            Write-Output "Current Directory: $PWD"
+            Write-Output "Folder Contents:"
+            Get-ChildItem -Recurse -Depth 2   
+    
