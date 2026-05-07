@@ -57,7 +57,7 @@ resource "azurerm_key_vault" "main" {
   network_acls {
     bypass         = "AzureServices"
     default_action = "Deny"
-    ip_rules       = [chomp(data.http.myip.response_body), var.runner_ip != "" ? var.runner_ip : ""]
+    ip_rules = compact([chomp(data.http.myip.response_body), var.runner_ip])
   }
 
   tags = var.tags

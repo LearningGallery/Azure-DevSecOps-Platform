@@ -14,7 +14,7 @@ resource "azurerm_storage_account" "main" {
   network_rules {
     default_action = "Deny"
     bypass         = ["AzureServices"]
-    ip_rules       = [chomp(data.http.myip.response_body), var.runner_ip != "" ? var.runner_ip : ""]
+    ip_rules = compact([chomp(data.http.myip.response_body), var.runner_ip])
   }
 
   blob_properties {
