@@ -3,6 +3,14 @@ name: 'Terraform Apply InfraCode'
 on:
   push:
     branches: [ "main" ]
+  workflow_dispatch: # Allows manual run
+    inputs:
+      environment:
+        description: 'Environment to Apply'
+        required: true
+        default: 'uat'
+        type: choice
+        options: [sit, uat, prod]
 
 permissions:
   id-token: write
