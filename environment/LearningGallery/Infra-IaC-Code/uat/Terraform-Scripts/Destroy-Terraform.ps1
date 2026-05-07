@@ -38,8 +38,26 @@ if (-not (Test-Path $VarFile)) {
     exit 1
 }
 
-# 2. Run plan to generate the execution file and capture output
-Write-Host "Executing: terraform plan -destroy -var-file=`"$VarFile`" -out=`"$PlanFile`"" -ForegroundColor DarkGray
+# ==============================================================================
+# [NEW FIX] 2. The Firewall Bypass (Targeted Apply)
+# Force Terraform to update the firewalls with the new GitHub Runner IP 
+# before attempting to read the state of the containers inside.
+# ==============================================================================
+Write-Host "`n[*] Bypassing firewalls: Whitelisting new GitHub Runner IP..." -ForegroundColor DarkGray
+
+# We target ONLY the Key Vault and Storage Account to avoid the 403 container errors
+terraform apply -target="module.storage.azurerm_storage_account.main" -target="module.security.azurerm_key_vault.main" -var-file="$VarFile" -auto-approve 2>&1 | Out-Null
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "[*] Firewall rules successfully updated! Pausing for 45 seconds to allow Azure network propagation..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 45
+} else {
+    Write-Host "[!] Warning: Targeted firewall update threw an error. Destroy may still hit 403 errors." -ForegroundColor Yellow
+}
+# ==============================================================================
+
+# 3. Run plan to generate the execution file and capture output
+Write-Host "`nExecuting: terraform plan -destroy -var-file=`"$VarFile`" -out=`"$PlanFile`"" -ForegroundColor DarkGray
 $rawOutput = terraform plan -destroy -var-file="$VarFile" -out="$PlanFile" 2>&1
 
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path $PlanFile)) {
@@ -48,7 +66,7 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path $PlanFile)) {
     exit 1
 }
 
-# 3. Build the Summary Table
+# 4. Build the Summary Table
 $planOutput = terraform show -no-color $PlanFile
 
 $separator = "====================================================================================="
@@ -96,7 +114,7 @@ if ($LogFile) {
     $logOutput | Out-File -FilePath $LogFile -Encoding UTF8 -Append
 }
 
-# 4. Pipeline Execution Gate
+# 5. Pipeline Execution Gate
 if ($changeCount -eq 0) {
     Write-Host "[OK] Nothing to destroy. Infrastructure is already empty.`n" -ForegroundColor Green
     Remove-Item $PlanFile -ErrorAction SilentlyContinue
@@ -107,7 +125,7 @@ if ($changeCount -eq 0) {
 # We execute automatically.
 Write-Host "`n[!] GitHub Environment Approval Confirmed. Executing Terraform Destroy...`n" -ForegroundColor Red
 
-# 5. Apply the destroy plan
+# 6. Apply the destroy plan
 terraform apply -no-color "$PlanFile"
 
 if ($LASTEXITCODE -ne 0) {
