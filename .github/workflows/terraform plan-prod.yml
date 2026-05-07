@@ -1,0 +1,47 @@
+name: 'Terraform Plan InfraCode [PROD]'
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: 
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  plan-prod:
+    name: 'Plan [PROD]'
+    runs-on: windows-latest
+    environment: prod 
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+          
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        working-directory: .\environment\LearningGallery\Infra-IaC-Code\prod
+      
+      - name: Terraform Init
+        run: terraform init
+        working-directory: .\environment\LearningGallery\Infra-IaC-Code\prod 
+
+      - name: Run Plan Script
+        shell: pwsh
+        run: .\environment\LearningGallery\Infra-IaC-Code\prod\Terraform-Scripts\Review-TerraformPlan.ps1 -Action "plan" -Environment "prod" -Path ".\environment\LearningGallery\Infra-IaC-Code\prod"
+        env:
+          TF_VAR_azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          TF_VAR_windows_admin_password: ${{ secrets.WINDOWS_ADMIN_PASSWORD }}
